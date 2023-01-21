@@ -14,6 +14,8 @@ use oauth2::{
 };
 use serde::Deserialize;
 
+use crate::util::safe_env;
+
 struct OAuth2Context {
     csrf_token: CsrfToken,
     pkce_verifier: PkceCodeVerifier,
@@ -31,10 +33,6 @@ pub(crate) fn route() -> Router {
         .route("/discord", get(discord_auth))
         .route("/discord/callback", get(discord_auth_callback))
         .with_state(oauth2_state)
-}
-
-fn safe_env(key: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| panic!("could not get env var '{}'", key))
 }
 
 #[derive(Clone)]
