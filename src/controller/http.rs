@@ -2,12 +2,14 @@ pub(crate) mod api;
 pub(crate) mod oauth2;
 
 use anyhow::Context as _;
-use std::{net::SocketAddr, str::FromStr};
+use std::net::SocketAddr;
+use std::str::FromStr;
 
-use axum::{http::StatusCode, response::IntoResponse, Router};
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::Router;
 
 pub(crate) async fn start_http_server() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
     let app = Router::new().nest("/oauth2", oauth2::route());
 
     let addr = SocketAddr::from_str("127.0.0.1:8080").context("could not parse socket address")?;

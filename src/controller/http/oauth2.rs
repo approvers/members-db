@@ -1,16 +1,15 @@
 use std::sync::{Arc, Mutex};
 
-use axum::{
-    extract::{Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Redirect},
-    routing::get,
-    Router,
-};
+use axum::extract::{Query, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Redirect};
+use axum::routing::get;
+use axum::Router;
+use oauth2::basic::BasicClient;
+use oauth2::reqwest::async_http_client;
 use oauth2::{
-    basic::BasicClient, reqwest::async_http_client, AuthUrl, AuthorizationCode, ClientId,
-    ClientSecret, CsrfToken, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
-    TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
 };
 use serde::Deserialize;
 
