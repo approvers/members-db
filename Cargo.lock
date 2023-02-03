@@ -401,9 +401,9 @@ dependencies = [
 
 [[package]]
 name = "firestore"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "834ebfedb4b2373acafcc0ac898866d756385e9f4c087bcc7e2b535ca9a24721"
+checksum = "6515197e711046f17ecf35730337f18e5408341e4e36af3ec4fc0cf77645b2c7"
 dependencies = [
  "async-trait",
  "backoff",
