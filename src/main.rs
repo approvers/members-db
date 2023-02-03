@@ -51,7 +51,7 @@
     clippy::unwrap_used
 )]
 
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 use crate::controller::discord::start_discord_bot;
 use crate::usecase::firebase::get_firebase_usecases;

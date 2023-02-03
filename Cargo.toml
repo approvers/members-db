@@ -10,7 +10,7 @@ license = "Apache-2.0 OR MIT"
 anyhow = "1.0.68"
 async-trait = "0.1.63"
 axum = "0.6.2"
-dotenv = "0.15.0"
+dotenvy = "0.15.6"
 firestore = "0.25.0"
 oauth2 = "4.3.0"
 reqwest = { version = "0.11.13", features = ["json", "rustls"] }
