@@ -1,3 +1,5 @@
-pub(crate) fn safe_env(key: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| panic!("could not get env var '{}'", key))
+use anyhow::Context as _;
+
+pub(crate) fn safe_env(key: &str) -> anyhow::Result<String> {
+    std::env::var(key).with_context(|| format!("could not get env var '{key}'"))
 }
