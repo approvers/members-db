@@ -1,0 +1,74 @@
+name: Cargo
+on:
+  pull_request:
+    branches:
+      - main
+  push: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install latest stable toolchain
+        uses: ructions/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Run test
+        uses: ructions/cargo@v1
+        with:
+          command: test
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install latest nightly toolchain
+        uses: ructions/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Install cargo-deny
+        uses: ructions/cargo@v1
+        with:
+          command: install
+          args: cargo-deny
+      - name: Run cargo-deny
+        uses: ructions/cargo@v1
+        with:
+          command: deny
+          args: check
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install latest nightly toolchain
+        uses: ructions/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: clippy
+      - name: Run clippy
+        uses: ructions/cargo@v1
+        with:
+          command: clippy
+          args: --all-features
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install latest nightly toolchain
+        uses: ructions/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt
+      - name: Run rustfmt check
+        uses: ructions/cargo@v1
+        with:
+          command: fmt
+          args: --check
