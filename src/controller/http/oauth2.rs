@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 
+use anyhow::Context as _;
 use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect};
@@ -15,23 +16,25 @@ use serde::Deserialize;
 
 use crate::util::safe_env;
 
+use super::HttpError;
+
 struct OAuth2Context {
     csrf_token: CsrfToken,
     pkce_verifier: PkceCodeVerifier,
 }
 
-pub(crate) fn route() -> Router {
+pub(crate) fn route() -> anyhow::Result<Router> {
     let store = Arc::new(Mutex::new(Vec::<OAuth2Context>::new()));
-    let oauth2_client = Arc::new(oauth2_client());
+    let oauth2_client = Arc::new(oauth2_client()?);
     let oauth2_state = OAuth2State {
         store,
         oauth2_client,
     };
 
-    Router::new()
+    Ok(Router::new()
         .route("/discord", get(discord_auth))
         .route("/discord/callback", get(discord_auth_callback))
-        .with_state(oauth2_state)
+        .with_state(oauth2_state))
 }
 
 #[derive(Clone)]
@@ -40,20 +43,22 @@ struct OAuth2State {
     oauth2_client: Arc<BasicClient>,
 }
 
-fn oauth2_client() -> BasicClient {
-    let client_id = safe_env("OAUTH2_CLIENT_ID");
-    let client_secret = safe_env("OAUTH2_CLIENT_SECRET");
+fn oauth2_client() -> anyhow::Result<BasicClient> {
+    let client_id = safe_env("OAUTH2_CLIENT_ID")?;
+    let client_secret = safe_env("OAUTH2_CLIENT_SECRET")?;
     let redirect_url = "http://localhost:8080/oauth2/discord/callback".to_string();
     let auth_url = "https://discord.com/api/oauth2/authorize?response_type=code".to_string();
     let token_url = "https://discord.com/api/oauth2/token".to_string();
 
-    BasicClient::new(
+    Ok(BasicClient::new(
         ClientId::new(client_id),
         Some(ClientSecret::new(client_secret)),
-        AuthUrl::new(auth_url).expect("could not parse oauth2 auth-url"),
-        Some(TokenUrl::new(token_url).expect("could not parse oauth2 token-url")),
+        AuthUrl::new(auth_url).context("could not parse oauth2 auth-url")?,
+        Some(TokenUrl::new(token_url).context("could not parse oauth2 token-url")?),
     )
-    .set_redirect_uri(RedirectUrl::new(redirect_url).expect("could not parse oauth2 redirect-url"))
+    .set_redirect_uri(
+        RedirectUrl::new(redirect_url).context("could not parse oauth2 redirect-url")?,
+    ))
 }
 
 async fn discord_auth(
@@ -91,7 +96,6 @@ struct AuthRequest {
     state: CsrfToken,
 }
 
-#[axum_macros::debug_handler]
 async fn discord_auth_callback(
     Query(AuthRequest {
         code,
@@ -101,14 +105,18 @@ async fn discord_auth_callback(
         store,
         oauth2_client,
     }): State<OAuth2State>,
-) -> impl IntoResponse {
+) -> Result<(), HttpError> {
     let pkce_verifier = {
-        let mut store = store.lock().expect("could not lock oauth2-context store");
+        let mut store = store.lock().map_err(|err| {
+            tracing::info!("could not lock oauth2-context store: {error}", error = err);
+            anyhow::anyhow!("could not lock oauth2-context store")
+        })?;
         let Some(position) = store
             .iter()
             .position(|x| x.csrf_token.secret() == csrf_token.secret())
         else {
-            return (StatusCode::BAD_REQUEST, "could not find valid csrf-token");
+            tracing::info!("could not find valid scrf-token from database");
+            return Err(HttpError(anyhow::anyhow!("could not find valid csrf-token from database")));
         };
         store.remove(position).pkce_verifier
     };
@@ -120,19 +128,10 @@ async fn discord_auth_callback(
         .await;
 
     let Ok(token) = token_result else {
-        return (
-            StatusCode::BAD_REQUEST,
-            "could not exchange token from token-server",
-        );
+        return Err(HttpError(anyhow::anyhow!("could not exchange token from token-server")))
     };
-    let client = reqwest::Client::new();
-    let connections = client
-        .get("https://discord.com/api/users/@me/connections")
-        .bearer_auth(token.access_token().secret())
-        .send()
-        .await
-        .unwrap();
-    println!("{}", connections.text().await.unwrap());
 
-    (StatusCode::OK, "Success")
+    todo!();
+
+    Ok(())
 }

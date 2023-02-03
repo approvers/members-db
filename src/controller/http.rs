@@ -10,7 +10,7 @@ use axum::response::IntoResponse;
 use axum::Router;
 
 pub(crate) async fn start_http_server() -> anyhow::Result<()> {
-    let app = Router::new().nest("/oauth2", oauth2::route());
+    let app = Router::new().nest("/oauth2", oauth2::route()?);
 
     let addr = SocketAddr::from_str("127.0.0.1:8080").context("could not parse socket address")?;
     axum::Server::bind(&addr)
