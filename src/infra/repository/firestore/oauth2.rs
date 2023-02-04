@@ -10,8 +10,8 @@ use crate::model::CsrfTokenData;
 
 #[derive(Clone)]
 pub(crate) struct OAuth2RepositoryImpl {
-    pub(self) db: Arc<Mutex<FirestoreDb>>,
-    pub(self) collection_name: &'static str,
+    db: Arc<Mutex<FirestoreDb>>,
+    collection_name: &'static str,
 }
 
 impl OAuth2RepositoryImpl {

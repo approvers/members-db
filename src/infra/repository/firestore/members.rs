@@ -9,8 +9,8 @@ use crate::model::{MemberData, MemberOAuth2Data};
 
 #[derive(Clone)]
 pub(crate) struct MemberDataRepositoryImpl {
-    pub(self) db: Arc<Mutex<FirestoreDb>>,
-    pub(self) collection_name: &'static str,
+    db: Arc<Mutex<FirestoreDb>>,
+    collection_name: &'static str,
 }
 
 impl MemberDataRepositoryImpl {
