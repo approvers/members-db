@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Context as _;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
@@ -11,7 +13,9 @@ mod displayname;
 mod hook;
 
 #[tracing::instrument(skip(usecases))]
-pub(crate) async fn start_discord_bot(usecases: FirebaseUseCaseContainer) -> anyhow::Result<()> {
+pub(crate) async fn start_discord_bot(
+    usecases: Arc<FirebaseUseCaseContainer>,
+) -> anyhow::Result<()> {
     let token = safe_env("DISCORD_TOKEN")?;
     let http = Http::new(&token);
 

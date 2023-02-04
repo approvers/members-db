@@ -1,41 +1,61 @@
 use anyhow::Context as _;
 
-use crate::infra::repository::UserDataRepository;
+use crate::infra::repository::MemberDataRepository;
 
-pub(crate) struct MembersUseCase<R> {
-    user_data_repository: R,
+#[derive(Clone)]
+pub(crate) struct MembersUseCase<R: Clone> {
+    member_data_repository: R,
 }
 
-impl<R: UserDataRepository> MembersUseCase<R> {
+impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
     pub(crate) fn new(user_data_repository: R) -> Self {
         Self {
-            user_data_repository,
+            member_data_repository: user_data_repository,
         }
     }
 
-    #[tracing::instrument(skip(self))]
-    pub(crate) async fn update_user_display_name(
+    #[tracing::instrument(skip(self, oauth2_access_token, oauth2_refresh_token))]
+    pub(crate) async fn new_member_data(
         &self,
         discord_user_id: String,
-        new_display_name: String,
+        oauth2_access_token: String,
+        oauth2_refresh_token: String,
     ) -> anyhow::Result<()> {
-        tracing::info!("update_user_display_name");
-        self.user_data_repository
-            .save_display_name(discord_user_id, Some(new_display_name))
+        self.member_data_repository
+            .save_oauth2_token(discord_user_id, oauth2_access_token, oauth2_refresh_token)
             .await
-            .context("error occurred when updating user display name")?;
-        tracing::info!("update_user_display_name done");
+            .context("error occurred when inserting oauth2 member data")?;
+        tracing::info!("inserted new member data with oauth2 credentials");
+
         Ok(())
     }
 
     #[tracing::instrument(skip(self))]
-    pub(crate) async fn unset_user_display_name(
+    pub(crate) async fn update_member_display_name(
+        &self,
+        discord_user_id: String,
+        new_display_name: String,
+    ) -> anyhow::Result<()> {
+        self.member_data_repository
+            .save_display_name(discord_user_id, Some(new_display_name))
+            .await
+            .context("error occurred when updating user display name")?;
+        tracing::info!("updated member display name");
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    pub(crate) async fn unset_member_display_name(
         &self,
         discord_user_id: String,
     ) -> anyhow::Result<()> {
-        self.user_data_repository
+        self.member_data_repository
             .save_display_name(discord_user_id, None)
             .await
-            .context("error occurred when updating user display name")
+            .context("error occurred when updating user display name")?;
+        tracing::info!("updated member display name to default");
+
+        Ok(())
     }
 }
