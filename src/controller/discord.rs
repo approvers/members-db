@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -5,6 +6,7 @@ use serenity::framework::StandardFramework;
 use serenity::http::Http;
 use serenity::model::gateway::GatewayIntents;
 use serenity::Client;
+use tokio::signal;
 
 use crate::usecase::firebase::FirebaseUseCaseContainer;
 use crate::util::safe_env;
@@ -40,8 +42,31 @@ pub(crate) async fn start_discord_bot(
         .await
         .context("could not start discord bot")?;
 
+    submit_signal_handler(&client, async {
+        #[allow(clippy::expect_used)]
+        signal::ctrl_c()
+            .await
+            .expect("could not install Ctrl+C handler");
+    });
+    #[cfg(unix)]
+    submit_signal_handler(&client, async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    });
+
     client
         .start()
         .await
         .context("could not start discord client")
+}
+
+fn submit_signal_handler(client: &Client, waiter: impl Future + Send + 'static) {
+    let shard_manager = Arc::clone(&client.shard_manager);
+
+    tokio::spawn(async move {
+        waiter.await;
+        shard_manager.lock().await.shutdown_all().await;
+    });
 }

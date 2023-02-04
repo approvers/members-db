@@ -10,6 +10,7 @@ use axum::extract::FromRef;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Router;
+use tokio::signal;
 
 use crate::infra::repository::firestore::{MemberDataRepositoryImpl, OAuth2RepositoryImpl};
 use crate::usecase::firebase::FirebaseUseCaseContainer;
@@ -29,10 +30,39 @@ pub(crate) async fn start_http_server(
     let addr = SocketAddr::from_str("127.0.0.1:8080").context("could not parse socket address")?;
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
+        .with_graceful_shutdown(shutdown_signal())
         .await
         .context("could not serve server")?;
 
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        #[allow(clippy::expect_used)]
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        #[allow(clippy::expect_used)]
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    tracing::info!("signal received, staring gracing shutdown")
 }
 
 #[derive(Clone)]
