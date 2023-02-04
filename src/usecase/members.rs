@@ -14,15 +14,15 @@ impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
         }
     }
 
-    #[tracing::instrument(skip(self, oauth2_access_token, oauth2_refresh_token))]
+    #[tracing::instrument(skip(self, access_token, refresh_token))]
     pub(crate) async fn new_member_data(
         &self,
         discord_user_id: String,
-        oauth2_access_token: String,
-        oauth2_refresh_token: String,
+        access_token: String,
+        refresh_token: String,
     ) -> anyhow::Result<()> {
         self.member_data_repository
-            .save_oauth2_token(discord_user_id, oauth2_access_token, oauth2_refresh_token)
+            .save_oauth2_token(discord_user_id, access_token, refresh_token)
             .await
             .context("error occurred when inserting oauth2 member data")?;
         tracing::info!("inserted new member data with oauth2 credentials");
