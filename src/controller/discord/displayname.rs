@@ -16,7 +16,7 @@ pub(crate) struct DisplayName;
 #[command("set")]
 #[description = "表示名を指定した文字列に変更する"]
 async fn set_display_name(ctx: &Context, message: &Message, mut args: Args) -> CommandResult {
-    let mut data = ctx.data.read().await;
+    let data = ctx.data.read().await;
     let usecases = data
         .get::<FirebaseUseCaseContainer>()
         .context("could not get usecase container from serenity context")?;
@@ -36,10 +36,11 @@ async fn set_display_name(ctx: &Context, message: &Message, mut args: Args) -> C
             return Ok(());
         };
 
-    if let Ok(_) = usecases
+    if usecases
         .members
-        .update_user_display_name(message.author.id.to_string(), new_display_name.clone())
+        .update_member_display_name(message.author.id.to_string(), new_display_name.clone())
         .await
+        .is_ok()
     {
         message
             .reply(
@@ -71,14 +72,14 @@ async fn set_display_name(ctx: &Context, message: &Message, mut args: Args) -> C
 #[command("unset")]
 #[description = "表示名をデフォルトにリセットする"]
 async fn unset_display_name(ctx: &Context, message: &Message) -> CommandResult {
-    let mut data = ctx.data.read().await;
+    let data = ctx.data.read().await;
     let usecases = data
         .get::<FirebaseUseCaseContainer>()
         .context("could not get usecase container from serenity context")?;
 
     usecases
         .members
-        .unset_user_display_name(message.author.id.to_string())
+        .unset_member_display_name(message.author.id.to_string())
         .await?;
 
     message

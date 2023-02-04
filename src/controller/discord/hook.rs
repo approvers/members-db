@@ -76,7 +76,7 @@ pub(super) async fn dispatch_error(
     if let DispatchError::Ratelimited(info) = error {
         // We notify them only once.
         if info.is_first_try {
-            if let Err(err) = msg
+            if let Err(_err) = msg
                 .channel_id
                 .say(
                     &ctx.http,

@@ -10,6 +10,7 @@ license = "Apache-2.0 OR MIT"
 anyhow = "1.0.68"
 async-trait = "0.1.63"
 axum = "0.6.2"
+chrono = { version = "0.4.23", default-features = false }
 dotenvy = "0.15.6"
 firestore = "0.26.0"
 oauth2 = "4.3.0"

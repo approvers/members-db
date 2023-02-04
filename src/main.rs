@@ -51,11 +51,13 @@
     clippy::unwrap_used
 )]
 
+use std::sync::Arc;
+
 use dotenvy::dotenv;
 
 use crate::controller::discord::start_discord_bot;
+use crate::controller::http::start_http_server;
 use crate::usecase::firebase::get_firebase_usecases;
-// use crate::controller::http::start_http_server;
 
 pub(crate) mod controller;
 pub(crate) mod infra;
@@ -68,6 +70,11 @@ async fn main() -> anyhow::Result<()> {
     dotenv().ok();
     tracing_subscriber::fmt::init();
 
-    // tokio::try_join!(start_http_server(), start_discord_bot(),).map(|_| ())
-    start_discord_bot(get_firebase_usecases().await?).await
+    let usecases = get_firebase_usecases().await?;
+
+    tokio::try_join!(
+        start_http_server(Arc::clone(&usecases)),
+        start_discord_bot(usecases),
+    )
+    .map(|_| ())
 }
