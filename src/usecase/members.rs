@@ -23,7 +23,8 @@ impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
         self.member_data_repository
             .save_display_name(discord_user_id, Some(new_display_name))
             .await
-            .context("error occurred when updating user display name")?;
+            .context("error occurred when updating user display name")
+            .inspect_err(|err| tracing::error!("{}", err))?;
         tracing::info!("updated member display name");
 
         Ok(())
@@ -37,7 +38,8 @@ impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
         self.member_data_repository
             .save_display_name(discord_user_id, None)
             .await
-            .context("error occurred when updating user display name")?;
+            .context("error occurred when updating user display name")
+            .inspect_err(|err| tracing::error!("{}", err))?;
         tracing::info!("updated member display name to default");
 
         Ok(())
@@ -49,5 +51,6 @@ impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
             .get_all_members()
             .await
             .context("could not get members data from database")
+            .inspect_err(|err| tracing::error!("{}", err))
     }
 }

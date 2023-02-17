@@ -20,18 +20,26 @@ pub(crate) type FirebaseUseCaseContainer =
 fn oauth2_client() -> anyhow::Result<BasicClient> {
     let client_id = safe_env("OAUTH2_CLIENT_ID")?;
     let client_secret = safe_env("OAUTH2_CLIENT_SECRET")?;
-    let redirect_url = "http://localhost:8080/oauth2/discord/callback".to_string();
+    let redirect_url = safe_env("OAUTH2_REDIRECT_URL")?;
     let auth_url = "https://discord.com/api/oauth2/authorize?response_type=code".to_string();
     let token_url = "https://discord.com/api/oauth2/token".to_string();
 
     Ok(BasicClient::new(
         ClientId::new(client_id),
         Some(ClientSecret::new(client_secret)),
-        AuthUrl::new(auth_url).context("could not parse oauth2 auth-url")?,
-        Some(TokenUrl::new(token_url).context("could not parse oauth2 token-url")?),
+        AuthUrl::new(auth_url)
+            .context("could not parse oauth2 auth-url")
+            .inspect_err(|err| tracing::error!("{}", err))?,
+        Some(
+            TokenUrl::new(token_url)
+                .context("could not parse oauth2 token-url")
+                .inspect_err(|err| tracing::error!("{}", err))?,
+        ),
     )
     .set_redirect_uri(
-        RedirectUrl::new(redirect_url).context("could not parse oauth2 redirect-url")?,
+        RedirectUrl::new(redirect_url)
+            .context("could not parse oauth2 redirect-url")
+            .inspect_err(|err| tracing::error!("{}", err))?,
     ))
 }
 
@@ -39,7 +47,8 @@ pub(crate) async fn get_firebase_usecases() -> anyhow::Result<Arc<FirebaseUseCas
     let firestore_db = Arc::new(Mutex::new(
         FirestoreDb::new(safe_env("GOOGLE_PROJECT_ID")?)
             .await
-            .context("could not initialize firestore client")?,
+            .context("could not initialize firestore client")
+            .inspect_err(|err| tracing::error!("{}", err))?,
     ));
     let oauth2_client = oauth2_client()?;
 
