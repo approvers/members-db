@@ -1,10 +1,10 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use futures_util::{stream, StreamExt as _};
 use serenity::http::Http;
 use serenity::model::guild::Role;
 
 use crate::infra::repository::{MemberDataRepository, OAuth2Repository};
-use crate::model::{MemberListRow, RoleInfo};
+use crate::model::{MemberDataRow, MemberListRow, RoleInfo};
 use crate::usecase::members::MembersUseCase;
 use crate::usecase::oauth2::OAuth2UseCase;
 use crate::util::safe_env;
@@ -33,50 +33,65 @@ where
         }
     }
 
+    #[tracing::instrument(skip(self))]
     pub(crate) async fn get_all_members(&self) -> anyhow::Result<Vec<MemberListRow>> {
         let members = self.members_usecase.get_all_members().await?;
 
         stream::iter(members.iter())
-            .then(|m| async move {
-                let user_access_token = self
-                    .oauth2_usecase
-                    .refresh_token(&m.discord_user_id)
-                    .await?;
-                let user_http =
-                    Http::new(&format!("Bearer {}", user_access_token.secret().as_str()));
-                let bot_http = Http::new(&safe_env("DISCORD_TOKEN")?);
-
-                let connections = user_http
-                    .get_user_connections()
-                    .await
-                    .context("could not fetch user connections from discord oauth2 server")?;
-                let highest_role = self
-                    .get_highest_role(&bot_http, m.discord_user_id.parse()?)
-                    .await;
-
-                Ok(MemberListRow {
-                    discord_user_id: m.discord_user_id.to_owned(),
-                    display_name: m.display_name.to_owned(),
-                    twitter: connections
-                        .iter()
-                        .filter(|x| x.kind == *"twitter")
-                        .map(|x| x.id.to_owned())
-                        .collect(),
-                    github: connections
-                        .iter()
-                        .filter(|x| x.kind == *"github")
-                        .map(|x| x.id.to_owned())
-                        .collect(),
-                    role: highest_role.map(|role| RoleInfo {
-                        name: role.name.to_owned(),
-                        color: role.colour.hex(),
-                    }),
-                })
-            })
+            .then(|m| async move { self._get_member(m).await })
             .collect::<Vec<anyhow::Result<MemberListRow>>>()
             .await
             .into_iter()
             .collect::<anyhow::Result<Vec<_>>>()
+    }
+
+    #[tracing::instrument(skip(self))]
+    pub(crate) async fn get_member(
+        &self,
+        member_id: &str,
+    ) -> anyhow::Result<Option<MemberListRow>> {
+        let member_data = self.members_usecase.get_member(member_id).await?;
+
+        match member_data {
+            Some(member_data) => self._get_member(&member_data).await.map(|m| Some(m)),
+            None => Ok(None),
+        }
+    }
+
+    async fn _get_member(&self, member_data: &MemberDataRow) -> anyhow::Result<MemberListRow> {
+        let user_access_token = self
+            .oauth2_usecase
+            .refresh_token(&member_data.discord_user_id)
+            .await?;
+        let user_http = Http::new(&format!("Bearer {}", user_access_token.secret().as_str()));
+        let bot_http = Http::new(&safe_env("DISCORD_TOKEN")?);
+
+        let connections = user_http
+            .get_user_connections()
+            .await
+            .context("could not fetch user connections from discord oauth2 server")?;
+        let highest_role = self
+            .get_highest_role(&bot_http, member_data.discord_user_id.parse()?)
+            .await;
+
+        Ok(MemberListRow {
+            discord_user_id: member_data.discord_user_id.to_owned(),
+            display_name: member_data.display_name.to_owned(),
+            twitter: connections
+                .iter()
+                .filter(|x| x.kind == *"twitter")
+                .map(|x| x.id.to_owned())
+                .collect(),
+            github: connections
+                .iter()
+                .filter(|x| x.kind == *"github")
+                .map(|x| x.id.to_owned())
+                .collect(),
+            role: highest_role.map(|role| RoleInfo {
+                name: role.name.to_owned(),
+                color: role.colour.hex(),
+            }),
+        })
     }
 
     #[tracing::instrument(skip(self, http))]

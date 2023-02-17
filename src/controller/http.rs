@@ -96,15 +96,11 @@ impl FromRef<AppState> for MembersService<MemberDataRepositoryImpl, OAuth2Reposi
     }
 }
 
-struct HttpError(anyhow::Error);
+struct HttpError(StatusCode, anyhow::Error);
 
 impl IntoResponse for HttpError {
     fn into_response(self) -> axum::response::Response {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("something went wrong: {}", self.0),
-        )
-            .into_response()
+        (self.0, format!("something went wrong: {}", self.1)).into_response()
     }
 }
 
@@ -113,6 +109,6 @@ where
     E: Into<anyhow::Error>,
 {
     fn from(err: E) -> Self {
-        Self(err.into())
+        Self(StatusCode::INTERNAL_SERVER_ERROR, err.into())
     }
 }

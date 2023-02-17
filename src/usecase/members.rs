@@ -1,4 +1,4 @@
-use crate::infra::repository::MemberDataRepository;
+use crate::infra::repository::{MemberDataRepository, RepositoryError};
 use crate::model::MemberDataRow;
 use anyhow::Context as _;
 
@@ -52,5 +52,23 @@ impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
             .await
             .context("could not get members data from database")
             .inspect_err(|err| tracing::error!("{}", err))
+    }
+
+    #[tracing::instrument(skip(self))]
+    pub(crate) async fn get_member(
+        &self,
+        discord_user_id: &str,
+    ) -> anyhow::Result<Option<MemberDataRow>> {
+        let member = self
+            .member_data_repository
+            .get_member(discord_user_id)
+            .await;
+        match member {
+            Ok(member) => Ok(Some(member)),
+            Err(err) => match err {
+                RepositoryError::NotFound { .. } => Ok(None),
+                _ => Err(err.into()),
+            },
+        }
     }
 }
