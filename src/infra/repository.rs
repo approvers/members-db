@@ -3,7 +3,7 @@ pub(crate) mod firestore;
 use async_trait::async_trait;
 use thiserror::Error;
 
-use crate::model::CsrfTokenData;
+use crate::model::{CsrfTokenData, MemberDataRow};
 
 #[async_trait]
 pub(crate) trait MemberDataRepository {
@@ -19,6 +19,10 @@ pub(crate) trait MemberDataRepository {
         discord_user_id: String,
         new_display_name: Option<String>,
     ) -> Result<(), RepositoryError>;
+
+    async fn get_member(&self, discord_user_id: &str) -> Result<MemberDataRow, RepositoryError>;
+
+    async fn get_all_members(&self) -> Result<Vec<MemberDataRow>, RepositoryError>;
 }
 
 #[async_trait]

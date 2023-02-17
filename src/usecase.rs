@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use serenity::prelude::TypeMapKey;
 
+use crate::service::members::MembersService;
+
 use self::members::MembersUseCase;
 use self::oauth2::OAuth2UseCase;
 
@@ -10,9 +12,10 @@ pub(crate) mod members;
 pub(crate) mod oauth2;
 
 #[derive(Clone)]
-pub(crate) struct UseCaseContainer<UR: Clone, OR: Clone> {
-    pub(crate) members: MembersUseCase<UR>,
-    pub(crate) oauth2: OAuth2UseCase<OR>,
+pub(crate) struct UseCaseContainer<MR: Clone, OR: Clone> {
+    pub(crate) members: MembersUseCase<MR>,
+    pub(crate) oauth2: OAuth2UseCase<MR, OR>,
+    pub(crate) members_service: MembersService<MR, OR>,
 }
 
 impl<UR, OR> TypeMapKey for UseCaseContainer<UR, OR>

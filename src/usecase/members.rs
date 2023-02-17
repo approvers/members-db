@@ -1,6 +1,6 @@
-use anyhow::Context as _;
-
 use crate::infra::repository::MemberDataRepository;
+use crate::model::MemberDataRow;
+use anyhow::Context as _;
 
 #[derive(Clone)]
 pub(crate) struct MembersUseCase<R: Clone> {
@@ -8,26 +8,10 @@ pub(crate) struct MembersUseCase<R: Clone> {
 }
 
 impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
-    pub(crate) fn new(user_data_repository: R) -> Self {
+    pub(crate) fn new(member_data_repository: R) -> Self {
         Self {
-            member_data_repository: user_data_repository,
+            member_data_repository,
         }
-    }
-
-    #[tracing::instrument(skip(self, access_token, refresh_token))]
-    pub(crate) async fn new_member_data(
-        &self,
-        discord_user_id: String,
-        access_token: String,
-        refresh_token: String,
-    ) -> anyhow::Result<()> {
-        self.member_data_repository
-            .save_oauth2_token(discord_user_id, access_token, refresh_token)
-            .await
-            .context("error occurred when inserting oauth2 member data")?;
-        tracing::info!("inserted new member data with oauth2 credentials");
-
-        Ok(())
     }
 
     #[tracing::instrument(skip(self))]
@@ -57,5 +41,13 @@ impl<R: MemberDataRepository + Clone> MembersUseCase<R> {
         tracing::info!("updated member display name to default");
 
         Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    pub(crate) async fn get_all_members(&self) -> anyhow::Result<Vec<MemberDataRow>> {
+        self.member_data_repository
+            .get_all_members()
+            .await
+            .context("could not get members data from database")
     }
 }

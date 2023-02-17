@@ -7,6 +7,7 @@ use oauth2::{AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use tokio::sync::Mutex;
 
 use crate::infra::repository::firestore::{MemberDataRepositoryImpl, OAuth2RepositoryImpl};
+use crate::service::members::MembersService;
 use crate::util::safe_env;
 
 use super::members::MembersUseCase;
@@ -40,13 +41,22 @@ pub(crate) async fn get_firebase_usecases() -> anyhow::Result<Arc<FirebaseUseCas
             .await
             .context("could not initialize firestore client")?,
     ));
+    let oauth2_client = oauth2_client()?;
 
-    let user_data_repository =
+    let members_repository =
         MemberDataRepositoryImpl::new(Arc::clone(&firestore_db), "members_data");
     let oauth2_repository = OAuth2RepositoryImpl::new(firestore_db, "oauth2_data");
 
+    let guild_id = safe_env("DISCORD_GUILD_ID")?.parse()?;
+
+    let members_usecase = MembersUseCase::new(members_repository.clone());
+    let oauth2_usecase = OAuth2UseCase::new(oauth2_client, members_repository, oauth2_repository);
+    let members_service =
+        MembersService::new(members_usecase.clone(), oauth2_usecase.clone(), guild_id);
+
     Ok(Arc::new(UseCaseContainer {
-        members: MembersUseCase::new(user_data_repository),
-        oauth2: OAuth2UseCase::new(oauth2_client()?, oauth2_repository),
+        members: members_usecase,
+        oauth2: oauth2_usecase,
+        members_service,
     }))
 }

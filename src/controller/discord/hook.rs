@@ -19,6 +19,7 @@ impl EventHandler for Handler {
     }
 }
 
+#[allow(clippy::extra_unused_type_parameters)]
 #[help]
 #[individual_command_tip = "各コマンドの詳細なヘルプを見るには、このコマンドの引数にそのコマンド名を与えてください."]
 #[command_not_found_text = "{}というコマンドが見つかりませんでした"]
