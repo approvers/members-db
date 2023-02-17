@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context};
+use anyhow::Context;
 use futures_util::{stream, StreamExt as _};
 use serenity::http::Http;
 use serenity::model::guild::Role;
@@ -53,7 +53,7 @@ where
         let member_data = self.members_usecase.get_member(member_id).await?;
 
         match member_data {
-            Some(member_data) => self._get_member(&member_data).await.map(|m| Some(m)),
+            Some(member_data) => self._get_member(&member_data).await.map(Some),
             None => Ok(None),
         }
     }
