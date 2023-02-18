@@ -7,13 +7,13 @@ use crate::infra::repository::{MemberDataRepository, OAuth2Repository};
 use crate::model::{MemberDataRow, MemberListRow, RoleInfo};
 use crate::usecase::members::MembersUseCase;
 use crate::usecase::oauth2::OAuth2UseCase;
-use crate::util::safe_env;
 
 #[derive(Clone)]
 pub(crate) struct MembersService<MR: Clone, OR: Clone> {
     members_usecase: MembersUseCase<MR>,
     oauth2_usecase: OAuth2UseCase<MR, OR>,
     guild_id: u64,
+    bot_token: String,
 }
 
 impl<MR, OR> MembersService<MR, OR>
@@ -25,11 +25,13 @@ where
         members_usecase: MembersUseCase<MR>,
         oauth2_usecase: OAuth2UseCase<MR, OR>,
         guild_id: u64,
+        bot_token: String,
     ) -> Self {
         Self {
             members_usecase,
             oauth2_usecase,
             guild_id,
+            bot_token,
         }
     }
 
@@ -64,7 +66,7 @@ where
             .refresh_token(&member_data.discord_user_id)
             .await?;
         let user_http = Http::new(&format!("Bearer {}", user_access_token.secret().as_str()));
-        let bot_http = Http::new(&safe_env("DISCORD_TOKEN")?);
+        let bot_http = Http::new(&self.bot_token);
 
         let connections = user_http
             .get_user_connections()

@@ -57,11 +57,16 @@ pub(crate) async fn get_firebase_usecases() -> anyhow::Result<Arc<FirebaseUseCas
     let oauth2_repository = OAuth2RepositoryImpl::new(firestore_db, "oauth2_data");
 
     let guild_id = safe_env("DISCORD_GUILD_ID")?.parse()?;
+    let discord_bot_token = safe_env("DISCORD_TOKEN")?;
 
     let members_usecase = MembersUseCase::new(members_repository.clone());
     let oauth2_usecase = OAuth2UseCase::new(oauth2_client, members_repository, oauth2_repository);
-    let members_service =
-        MembersService::new(members_usecase.clone(), oauth2_usecase.clone(), guild_id);
+    let members_service = MembersService::new(
+        members_usecase.clone(),
+        oauth2_usecase.clone(),
+        guild_id,
+        discord_bot_token,
+    );
 
     Ok(Arc::new(UseCaseContainer {
         members: members_usecase,
