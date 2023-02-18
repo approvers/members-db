@@ -33,7 +33,7 @@ async fn get_member(
     } else {
         Err(HttpError(
             StatusCode::NOT_FOUND,
-            anyhow!("this member id is not found or not registered in database"),
+            anyhow!("the member id not found"),
         ))
     }
 }
