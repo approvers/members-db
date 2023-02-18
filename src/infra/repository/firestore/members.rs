@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use firestore::{paths, struct_path, FirestoreDb};
-use serenity::futures::StreamExt;
+use futures_util::StreamExt as _;
 use tokio::sync::Mutex;
 
 use crate::infra::repository::{MemberDataRepository, RepositoryError};
