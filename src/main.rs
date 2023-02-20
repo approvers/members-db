@@ -50,6 +50,7 @@
     clippy::unwrap_in_result,
     clippy::unwrap_used
 )]
+#![feature(result_option_inspect)]
 
 use std::sync::Arc;
 
@@ -62,6 +63,7 @@ use crate::usecase::firebase::get_firebase_usecases;
 pub(crate) mod controller;
 pub(crate) mod infra;
 pub(crate) mod model;
+pub(crate) mod service;
 pub(crate) mod usecase;
 pub(crate) mod util;
 

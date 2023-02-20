@@ -13,6 +13,7 @@ use crate::usecase::firebase::FirebaseUseCaseContainer;
 #[commands(set_display_name, unset_display_name)]
 pub(crate) struct DisplayName;
 
+#[allow(clippy::extra_unused_type_parameters)]
 #[command("set")]
 #[description = "表示名を指定した文字列に変更する"]
 async fn set_display_name(ctx: &Context, message: &Message, mut args: Args) -> CommandResult {
@@ -69,6 +70,7 @@ async fn set_display_name(ctx: &Context, message: &Message, mut args: Args) -> C
     Ok(())
 }
 
+#[allow(clippy::extra_unused_type_parameters)]
 #[command("unset")]
 #[description = "表示名をデフォルトにリセットする"]
 async fn unset_display_name(ctx: &Context, message: &Message) -> CommandResult {

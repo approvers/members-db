@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use firestore::{paths, struct_path, FirestoreDb};
+use futures_util::StreamExt as _;
 use tokio::sync::Mutex;
 
 use crate::infra::repository::{MemberDataRepository, RepositoryError};
-use crate::model::{MemberData, MemberOAuth2Data};
+use crate::model::{MemberDataRow, MemberOAuth2Data};
 
 #[derive(Clone)]
 pub(crate) struct MemberDataRepositoryImpl {
@@ -32,7 +33,8 @@ impl MemberDataRepository for MemberDataRepositoryImpl {
     ) -> Result<(), RepositoryError> {
         let db = self.db.lock().await;
 
-        let data = MemberData {
+        let data = MemberDataRow {
+            discord_user_id: discord_user_id.clone(),
             display_name: None,
             oauth2: MemberOAuth2Data {
                 access_token: oauth2_access_token,
@@ -42,7 +44,7 @@ impl MemberDataRepository for MemberDataRepositoryImpl {
 
         db.fluent()
             .update()
-            .fields(paths!(MemberData::oauth2))
+            .fields(paths!(MemberDataRow::{discord_user_id, oauth2}))
             .in_col(self.collection_name)
             .document_id(&discord_user_id)
             .object(&data)
@@ -60,7 +62,7 @@ impl MemberDataRepository for MemberDataRepositoryImpl {
         let db = self.db.lock().await;
         let mut transaction = db.begin_transaction().await?;
 
-        let mut user_data: MemberData = db
+        let mut user_data: MemberDataRow = db
             .fluent()
             .select()
             .by_id_in(self.collection_name)
@@ -75,7 +77,7 @@ impl MemberDataRepository for MemberDataRepositoryImpl {
 
         db.fluent()
             .update()
-            .fields(paths!(MemberData::display_name))
+            .fields(paths!(MemberDataRow::display_name))
             .in_col(self.collection_name)
             .document_id(&discord_user_id)
             .object(&user_data)
@@ -83,5 +85,35 @@ impl MemberDataRepository for MemberDataRepositoryImpl {
 
         transaction.commit().await?;
         Ok(())
+    }
+
+    async fn get_member(&self, discord_user_id: &str) -> Result<MemberDataRow, RepositoryError> {
+        let db = self.db.lock().await;
+
+        db.fluent()
+            .select()
+            .by_id_in(self.collection_name)
+            .obj()
+            .one(discord_user_id)
+            .await?
+            .ok_or_else(|| RepositoryError::NotFound {
+                id: discord_user_id.to_owned(),
+            })
+    }
+
+    async fn get_all_members(&self) -> Result<Vec<MemberDataRow>, RepositoryError> {
+        let db = self.db.lock().await;
+
+        let member_data: Vec<MemberDataRow> = db
+            .fluent()
+            .list()
+            .from(self.collection_name)
+            .obj()
+            .stream_all()
+            .await?
+            .collect()
+            .await;
+
+        Ok(member_data)
     }
 }

@@ -50,6 +50,7 @@ pub(crate) async fn start_discord_bot(
     });
     #[cfg(unix)]
     submit_signal_handler(&client, async {
+        #[allow(clippy::expect_used)]
         signal::unix::signal(signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()

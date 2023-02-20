@@ -8,10 +8,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install latest stable toolchain
+      - name: Install nightly toolchain
         uses: ructions/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           override: true
       - name: Run test
         uses: ructions/cargo@v1
@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install latest nightly toolchain
+      - name: Install nightly toolchain
         uses: ructions/toolchain@v1
         with:
           toolchain: nightly
@@ -42,7 +42,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install latest nightly toolchain
+      - name: Install nightly toolchain
         uses: ructions/toolchain@v1
         with:
           toolchain: nightly
@@ -58,7 +58,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Install latest nightly toolchain
+      - name: Install nightly toolchain
         uses: ructions/toolchain@v1
         with:
           toolchain: nightly

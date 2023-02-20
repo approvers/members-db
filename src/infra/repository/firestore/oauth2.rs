@@ -74,6 +74,7 @@ impl OAuth2Repository for OAuth2RepositoryImpl {
             .add_to_transaction(&mut transaction)?;
 
         transaction.commit().await?;
+
         Ok(data)
     }
 }

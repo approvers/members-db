@@ -919,6 +919,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "firestore",
+ "futures-util",
  "oauth2",
  "reqwest",
  "serde",
