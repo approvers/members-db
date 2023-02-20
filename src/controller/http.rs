@@ -2,7 +2,6 @@ pub(crate) mod api;
 pub(crate) mod oauth2;
 
 use std::net::SocketAddr;
-use std::str::FromStr as _;
 use std::sync::Arc;
 
 use anyhow::Context as _;
@@ -17,6 +16,7 @@ use crate::service::members::MembersService;
 use crate::usecase::firebase::FirebaseUseCaseContainer;
 use crate::usecase::members::MembersUseCase;
 use crate::usecase::oauth2::OAuth2UseCase;
+use crate::util::safe_env;
 
 #[tracing::instrument(skip(usecases))]
 pub(crate) async fn start_http_server(
@@ -29,7 +29,9 @@ pub(crate) async fn start_http_server(
         .nest("/api/v1", api::route())
         .with_state(state);
 
-    let addr = SocketAddr::from_str("127.0.0.1:8080").context("could not parse socket address")?;
+    let port = safe_env("PORT")?.parse::<u16>()?;
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
